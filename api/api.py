@@ -1,76 +1,82 @@
-from flask import Flask, request, jsonify, make_response
+from flask import Flask, request, make_response
 from flask_sqlalchemy import SQLAlchemy
-from marshmallow_sqlalchemy import ModelSchema
-from marshmallow import fields
+from sqlalchemy.exc import IntegrityError
+from marshmallow import Schema, fields, ValidationError, pre_load
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:////home/kat/adcash/database/products.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = True
 db = SQLAlchemy(app)
 
-class Products(db.Model):
+class Category(db.Model):
 	id = db.Column(db.Integer, primary_key=True)
 	name = db.Column(db.String(20))
-	category = db.Column(db.String(20))
 	
+class Product(db.Model):
+	id = db.Column(db.Integer, primary_key=True)
+	name = db.Column(db.String(20))
+	category_id = db.Column(db.Integer, db.ForeignKey("category.id"))
+	category = db.relationship("Category", backref=db.backref("products", lazy="dynamic"))
+	'''
+	def create(self):
+		db.session.add(self)
+		db.session.commit()
+		return self
 	def __init__(self, name, category):
 		self.name = name
 		self.category = category
 	def __repr__(self):
 		return '<Product %d>' % self.id
+	'''
+
 db.create_all()
 
-class ProductSchema(ModelSchema):
+class CategorySchema(Schema):
+	id = fields.Int(dump_only=True)
+	name = fields.Str()
+
+def must_not_be_blank(data):
+	if not data:
+		raise ValidationError("Data not provided.")
+		
+class ProductSchema(Schema):
+	id = fields.Int(dump_only=True)
+	category = fields.Nested(CategorySchema, validate=must_not_be_blank)
+	name = fields.Str(required=True, validate=must_not_be_blank)
+'''
 	class Meta(ModelSchema.Meta):
-		model = Products
+		model = Product
 		sqla_session = db.session
-	
-	id = fields.Number(dump_only=True)
-	name = fields.String(required=True)
-	category = fields.String(required=True)
-	
+'''
+
+
 @app.route('/products', methods=['GET'])
 def index():
-	get_products = Products.query.all()
+	get_products = Product.query.all()
 	product_schema = ProductSchema(many=True)
 	products = product_schema.dump(get_products)
 	return {"products": products}
 	
 if __name__ == '__main__':
 	app.run(debug=True)
-
 '''
-product1 = Products("banana", "fruit")
-product2 = Products("tuna", "fish")
-db.session.add(product1)
-db.session.add(product2)
-db.session.commit()
+@app.route('/categories', methods=['GET'])
+def listAllCategories():
+	 
+
 @app.route('/products', methods=['POST'])
 def create_product():
 	data = request.get_json()
+	if not data:
+		return {"message": "no input provided"}, 400
 	product_schema = ProductSchema()
-	product, error = product_schema.load(data)
-	result = product_schema.dump(product.create()).data
-	return make_response(jsonify({"product": products}),201)
+	product = product_schema.load(data)
+	result = product_schema.dump(product.create())
+	return {"message": "new product added", "product": result}
 	
-products = [
-	{'id': 0,
-	'name': 'banana',
-	'subcategory': '',
-	'category': 'fruit',
-	},
-	{'id': 1,
-	'name': 'tuna',
-	'subcategory': 'fish',
-	'category': 'meat'
-	},
-	{'id': 2,
-	'name': 'salmon',
-	'subcategory': 'fish',
-	'category': 'meat'
-	}
-]
 
+'''
+'''
 Getting the list of all categories;
 Getting the list of products of the concrete category;
 Create/update/delete of category;
@@ -85,39 +91,5 @@ Architectural organization of API;
 Code readability;
 Error handling;
 Unit tests coverage
-
-
-
-#Getting the list of all categories
-@app.route('/categories', methods=['GET'])
-def listAllCategories() {
-	categories = []
-	
-}
-
-@app.route('/products', methods=['GET'])
-def listAll():
-	return jsonify(products)
-
-@app.route('/products', methods=['GET'])
-def listByCategory():
-	if 'category' in request.args:
-		category = request.args['category']
-	else:
-		return "Please specify a category."
-
-	results = []
-
-	for p in products:
-		if p['category'] == category:
-			results.append(p)
-	return jsonify(results)
-"""
-@app.route('/api/v1/resources/products', methods=['POST'])
-def addProduct():
-	
-@app.route('/api/v1/resources/products', methods=['POST'])
-def addCategory():
-"""
 '''
 
