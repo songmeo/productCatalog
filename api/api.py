@@ -53,7 +53,7 @@ products_schema = ProductSchema(many=True, only=("id", "name"))
 def get_categories():
 	categories = Category.query.all()
 	result = categories_schema.dump(categories)
-	return {"categories": result}
+	return jsonify({"categories": result})
 
 @app.route("/categories/<int:pk>")
 def get_category(pk):
@@ -74,11 +74,11 @@ def get_product(pk):
 	result = product_schema.dump(product)
 	return jsonify({"product": result})
 	
-@app.route('/products/', methods=['GET'])
+@app.route('/products')
 def get_products():
 	products = Product.query.all()
-	result = product_schema.dump(products)
-	return {"products": result}
+	result = product_schema.dump(products, many=True)
+	return jsonify({"products": result})
 
 @app.route("/products/", methods=['POST'])
 def new_product():
@@ -101,6 +101,25 @@ def new_product():
 	db.session.commit()
 	result = product_schema.dump(Product.query.get(product.id))
 	return {"message": "Created new product.", "product": result}
+
+@app.route("/products/<int:id>", methods=["PUT"])
+def update_product_by_id(id):
+	json_data = request.get_json()
+	if not json_data:
+		return jsonify({"message": "No input data provided"}), 400
+	try:
+		data = category_schema.load(json_data)
+	except ValidationError as err:
+		return jsonify(err.messages), 422
+	get_product = Product.query.get(id)
+	if data.get("name"):
+		get_product.name = data["name"]
+	if data.get("category"):
+		get_product.category = data["category"]
+	db.session.add(get_product)
+	db.session.commit()
+	result = category_schema.dump(get_product)
+	return {"message": "Updated product", "product": result}
 	
 @app.route("/categories/", methods=['POST'])
 def new_category():
@@ -108,7 +127,7 @@ def new_category():
 	if not json_data:
 		return jsonify({"message": "No input data provided"}), 400
 	try:
-		data = product_schema.load(json_data)
+		data = category_schema.load(json_data)
 	except ValidationError as err:
 		return jsonify(err.messages), 422
 	name = data["name"]
@@ -138,6 +157,13 @@ def update_category_by_id(id):
 	db.session.commit()
 	result = category_schema.dump(get_category)
 	return {"message": "Updated category", "category": result}
+
+@app.route("/category/<int:id>", methods = ['DELETE'])
+def delete_category_by_id(id):
+	get_category = Category.query.get(id)
+	db.session.delete(get_category)
+	db.session.commit()
+	return {"message": "Deleted category"}
 	
 if __name__ == '__main__':
 	db.create_all()
