@@ -104,21 +104,17 @@ def new_product():
 
 @app.route("/product/<int:id>", methods=["PUT"])
 def update_product_by_id(id):
-	json_data = request.get_json()
-	if not json_data:
+	data = request.get_json()
+	if not data:
 		return jsonify({"message": "No input data provided"}), 400
-	try:
-		data = category_schema.load(json_data)
-	except ValidationError as err:
-		return jsonify(err.messages), 422
 	get_product = Product.query.get(id)
 	if data.get("name"):
 		get_product.name = data["name"]
 	if data.get("category"):
-		get_product.category = data["category"]
+		get_product.category = Category.query.filter_by(name=data["category"]).first()
 	db.session.add(get_product)
 	db.session.commit()
-	result = category_schema.dump(get_product)
+	result = product_schema.dump(get_product)
 	return {"message": "Updated product", "product": result}
 
 @app.route("/product/<int:id>", methods=["DELETE"])
