@@ -49,28 +49,6 @@ product_schema = ProductSchema()
 products_schema = ProductSchema(many=True, only=("id", "name"))
 
 ##### API #####
-@app.route("/products/", methods=['POST'])
-def new_product():
-	json_data = request.get_json()
-	if not json_data:
-		return jsonify({"message": "No input data provided"}), 400
-	try:
-		data = product_schema.load(json_data)
-	except ValidationError as err:
-		return jsonify(err.messages), 422
-	name = data["category"]["name"]
-	category = Category.query.filter_by(name=name).first()
-	if category is None:
-		category = Category(name=name)
-		db.session.add(category)
-	product = Product(
-			name=data["name"], category = category
-			)
-	db.session.add(product)
-	db.session.commit()
-	result = product_schema.dump(Product.query.get(product.id))
-	return {"message": "Created new product.", "product": result}
-
 @app.route('/categories')
 def get_categories():
 	categories = Category.query.all()
@@ -101,28 +79,53 @@ def get_products():
 	products = Product.query.all()
 	result = product_schema.dump(products)
 	return {"products": result}
+
+@app.route("/products/", methods=['POST'])
+def new_product():
+	json_data = request.get_json()
+	if not json_data:
+		return jsonify({"message": "No input data provided"}), 400
+	try:
+		data = product_schema.load(json_data)
+	except ValidationError as err:
+		return jsonify(err.messages), 422
+	name = data["category"]["name"]
+	category = Category.query.filter_by(name=name).first()
+	if category is None:
+		category = Category(name=name)
+		db.session.add(category)
+	product = Product(
+			name=data["name"], category = category
+			)
+	db.session.add(product)
+	db.session.commit()
+	result = product_schema.dump(Product.query.get(product.id))
+	return {"message": "Created new product.", "product": result}
 	
+@app.route("/categories/", methods=['POST'])
+def new_category():
+	json_data = request.get_json()
+	if not json_data:
+		return jsonify({"message": "No input data provided"}), 400
+	try:
+		data = product_schema.load(json_data)
+	except ValidationError as err:
+		return jsonify(err.messages), 422
+	name = data["name"]
+	category = Category.query.filter_by(name=name).first()
+	if category is None:
+		category = Category(name=name)
+		db.session.add(category)
+		db.session.commit()
+		result = category_schema.dump(Category.query.get(category.id))
+		return {"message": "Created new category.", "category": result}
+	else:
+		return {"message": "Category existed"}
 
 if __name__ == '__main__':
 	db.create_all()
 	app.run(debug=True)
-'''
-@app.route('/categories', methods=['GET'])
-def listAllCategories():
-	 
 
-@app.route('/products', methods=['POST'])
-def create_product():
-	data = request.get_json()
-	if not data:
-		return {"message": "no input provided"}, 400
-	product_schema = ProductSchema()
-	product = product_schema.load(data)
-	result = product_schema.dump(product.create())
-	return {"message": "new product added", "product": result}
-	
-
-'''
 '''
 Getting the list of all categories;
 Getting the list of products of the concrete category;
