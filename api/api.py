@@ -1,4 +1,4 @@
-from flask import Flask, request, make_response
+from flask import Flask, request, make_response, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.exc import IntegrityError
 from marshmallow import Schema, fields, ValidationError, pre_load
@@ -8,56 +8,103 @@ app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:////home/kat/adcash/database/pro
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = True
 db = SQLAlchemy(app)
 
+##### MODELS #####
 class Category(db.Model):
 	id = db.Column(db.Integer, primary_key=True)
 	name = db.Column(db.String(20))
 	
 class Product(db.Model):
 	id = db.Column(db.Integer, primary_key=True)
-	name = db.Column(db.String(20))
+	name = db.Column(db.String(20), nullable=False)
 	category_id = db.Column(db.Integer, db.ForeignKey("category.id"))
 	category = db.relationship("Category", backref=db.backref("products", lazy="dynamic"))
-	'''
-	def create(self):
-		db.session.add(self)
-		db.session.commit()
-		return self
-	def __init__(self, name, category):
-		self.name = name
-		self.category = category
-	def __repr__(self):
-		return '<Product %d>' % self.id
-	'''
 
-db.create_all()
+##### SCHEMAS #####
+def must_not_be_blank(data):
+	if not data:
+		raise ValidationError("Data not provided.")
 
 class CategorySchema(Schema):
 	id = fields.Int(dump_only=True)
 	name = fields.Str()
 
-def must_not_be_blank(data):
-	if not data:
-		raise ValidationError("Data not provided.")
-		
 class ProductSchema(Schema):
 	id = fields.Int(dump_only=True)
 	category = fields.Nested(CategorySchema, validate=must_not_be_blank)
 	name = fields.Str(required=True, validate=must_not_be_blank)
-'''
-	class Meta(ModelSchema.Meta):
-		model = Product
-		sqla_session = db.session
-'''
+	@pre_load
+	def process_category(self, data, **kwargs):
+		category_name = data.get("category")
+		if category_name:
+			name = category_name
+			category_dict = dict(name=name)
+		else:
+			category_dict = {}
+		data["category"] = category_dict
+		return data
 
+category_schema = CategorySchema()
+categories_schema = CategorySchema(many=True)
+product_schema = ProductSchema()
+products_schema = ProductSchema(many=True, only=("id", "name"))
 
-@app.route('/products', methods=['GET'])
-def index():
-	get_products = Product.query.all()
-	product_schema = ProductSchema(many=True)
-	products = product_schema.dump(get_products)
-	return {"products": products}
+##### API #####
+@app.route("/products/", methods=['POST'])
+def new_product():
+	json_data = request.get_json()
+	if not json_data:
+		return jsonify({"message": "No input data provided"}), 400
+	try:
+		data = product_schema.load(json_data)
+	except ValidationError as err:
+		return jsonify(err.messages), 422
+	name = data["category"]["name"]
+	category = Category.query.filter_by(name=name).first()
+	if category is None:
+		category = Category(name=name)
+		db.session.add(category)
+	product = Product(
+			name=data["name"], category = category
+			)
+	db.session.add(product)
+	db.session.commit()
+	result = product_schema.dump(Product.query.get(product.id))
+	return {"message": "Created new product.", "product": result}
+
+@app.route('/categories')
+def get_categories():
+	categories = Category.query.all()
+	result = categories_schema.dump(categories)
+	return {"categories": result}
+
+@app.route("/categories/<int:pk>")
+def get_category(pk):
+	try:
+		category = Category.query.get(pk)
+	except IntegrityError:
+		return {"message": "Category could not be found."}, 400
+	category_result = category_schema.dump(category)
+	products_result  = products_schema.dump(category.products.all())
+	return {"category": category_result, "products": products_result}
+
+@app.route("/products/<int:pk>")
+def get_product(pk):
+	try:
+		product = Product.query.get(pk)
+	except IntegrityError:
+		return jsonify({"message": "Product could not be found."}), 400
+	result = product_schema.dump(product)
+	return jsonify({"product": result})
 	
+@app.route('/products/', methods=['GET'])
+def get_products():
+	products = Product.query.all()
+	result = product_schema.dump(products)
+	return {"products": result}
+	
+
 if __name__ == '__main__':
+	db.create_all()
 	app.run(debug=True)
 '''
 @app.route('/categories', methods=['GET'])
