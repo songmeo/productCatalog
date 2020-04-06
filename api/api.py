@@ -102,7 +102,7 @@ def new_product():
 	result = product_schema.dump(Product.query.get(product.id))
 	return {"message": "Created new product.", "product": result}
 
-@app.route("/products/<int:id>", methods=["PUT"])
+@app.route("/product/<int:id>", methods=["PUT"])
 def update_product_by_id(id):
 	json_data = request.get_json()
 	if not json_data:
@@ -120,7 +120,14 @@ def update_product_by_id(id):
 	db.session.commit()
 	result = category_schema.dump(get_product)
 	return {"message": "Updated product", "product": result}
-	
+
+@app.route("/product/<int:id>", methods=["DELETE"])
+def delete_product_by_id(id):
+	get_product = Product.query.get(id)
+	db.session.delete(get_product)
+	db.session.commit()
+	return {"message": "Deleted product"}
+
 @app.route("/categories/", methods=['POST'])
 def new_category():
 	json_data = request.get_json()
@@ -175,7 +182,6 @@ Getting the list of products of the concrete category;
 Create/update/delete of category;
 Create/update/delete of product;
 
-The application should be written in one of the following languages (Golang, Python,PHP, JavaScript);
 Response results should have JSON encoding;
 The assignment results should be published on github including a short ReadMe abouthow to deploy the application;
 
