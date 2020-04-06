@@ -122,6 +122,23 @@ def new_category():
 	else:
 		return {"message": "Category existed"}
 
+@app.route("/category/<int:id>", methods=['PUT'])
+def update_category_by_id(id):
+	json_data = request.get_json()
+	if not json_data:
+		return jsonify({"message": "No input data provided"}), 400
+	try:
+		data = category_schema.load(json_data)
+	except ValidationError as err:
+		return jsonify(err.messages), 422
+	get_category = Category.query.get(id)
+	if data.get("name"):
+		get_category.name = data["name"]
+	db.session.add(get_category)
+	db.session.commit()
+	result = category_schema.dump(get_category)
+	return {"message": "Updated category", "category": result}
+	
 if __name__ == '__main__':
 	db.create_all()
 	app.run(debug=True)
