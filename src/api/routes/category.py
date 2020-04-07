@@ -64,7 +64,7 @@ def update_category_by_id(id):
 	db.session.add(get_category)
 	db.session.commit()
 	result = category_schema.dump(get_category)
-	return {"message": "Updated category", "category": result}
+	return response_with(resp.SUCCESS_200, value={"category": result})
 
 @category_routes.route("/category/<int:id>", methods = ['DELETE'])
 def delete_category_by_id(id):

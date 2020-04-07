@@ -1,8 +1,12 @@
 from api.utils.database import db
+from api.models.category import CategorySchema
 from flask import Flask, request, make_response, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.exc import IntegrityError
 from marshmallow import Schema, fields, ValidationError, pre_load
+
+category_schema = CategorySchema()
+categories_schema = CategorySchema(many=True)
 
 def must_not_be_blank(data):
 	if not data:
