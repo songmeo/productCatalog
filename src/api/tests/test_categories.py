@@ -1,7 +1,5 @@
 import json, io
 from api.utils.test_base import BaseTestCase
-#from api.models.category import Category
-#from api.models.product import Product
 from api.models.model import Product, ProductSchema, Category, CategorySchema
 import unittest2 as unittest
 

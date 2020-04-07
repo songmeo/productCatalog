@@ -11,68 +11,60 @@ products_schema = ProductSchema(many=True, only=("id", "name"))
 
 @product_routes.route("/<int:pk>")
 def get_product(pk):
-	try:
-		product = Product.query.get(pk)
-	except IntegrityError:
-		return jsonify({"message": "Product could not be found."}), 400
+	product = Product.query.get(pk)
+	if not product:
+		return response_with(resp.BAD_REQUEST_400, {"message": "Product could not be found."})
 	result = product_schema.dump(product)
 	return jsonify({"product": result})
 	
 @product_routes.route('/')
 def get_products():
 	products = Product.query.all()
-	result = product_schema.dump(products, many=True)
+	result = products_schema.dump(products)
 	return jsonify({"products": result})
 
 @product_routes.route("/", methods=['POST'])
 def new_product():
-	try:
-		json_data = request.get_json()
-		if not json_data:
-			return jsonify({"message": "No input data provided"}), 400
-		try:
-			data = product_schema.load(json_data)
-		except ValidationError as err:
-			return jsonify(err.messages), 422
-		product = Product.query.filter_by(name=data["name"]).first()
-		if product is None: #check if product exists
-			name = data["category"]["name"]
-			category = Category.query.filter_by(name=name).first()
-			if category is None: #check if category exists
-				category = Category(name=name)
-				db.session.add(category)
-				product = Product(
-				name=data["name"], category = category
-				)
-			product = Product(name=name)
-			db.session.add(product)
-			db.session.commit()
-			result = product_schema.dump(Product.query.get(product.id))
-			return response_with(resp.SUCCESS_200, value={"product": result})
-		else:
-			return response_with(resp.SUCCESS_201, value={"message": "Product existed"})
-	except Exception as e:
-		print(e)
-		return response_with(resp.INVALID_INPUT_422)
-
-@product_routes.route("/<int:id>", methods=["PUT"])
-def update_product_by_id(id):
 	data = request.get_json()
 	if not data:
-		return jsonify({"message": "No input data provided"}), 400
+		return response_with(resp.BAD_REQUEST_400, value={"message": "No input data provided"})
+	product = Product.query.filter_by(name=data["name"]).first()
+	if product is None:
+		product = Product(name=data["name"])
+		category = Category.query.filter_by(name=data["category"]).first()
+		if category is None:
+			category = Category(name=data["category"])
+			db.session.add(category)
+		category.products.append(product)
+		db.session.add(product)
+		db.session.commit()
+		result = product_schema.dump(Product.query.get(product.id))
+		return response_with(resp.SUCCESS_200, value={"product": result})
+	return response_with(resp.SUCCESS_201, value={"message": "product existed"})
+
+@product_routes.route("/<int:id>", methods=["PUT"])
+def change_product_name_by_id(id):
+	data = request.get_json()
+	if not data:
+		return response_with(resp.BAD_REQUEST_400, value={"message": "No input data provided"})
 	get_product = Product.query.get(id)
-	if data.get("name"):
-		get_product.name = data["name"]
-	if data.get("category"):
-		get_product.category = Category.query.filter_by(name=data["category"]).first()
+	if not get_product:
+		return response_with(resp.BAD_REQUEST_400, value={"message": "no product found"})
+	get_product.name = data["name"]
 	db.session.add(get_product)
 	db.session.commit()
 	result = product_schema.dump(get_product)
-	return {"message": "Updated product", "product": result}
+	return response_with(resp.SUCCESS_201, value={"product": result})
+
+@product_routes.route("/", methods=["DELETE"])
+def delete_all_products(id):
+	Product.query.delete()
+	db.session.commit()
+	return response_with(resp.SUCCESS_200)
 
 @product_routes.route("/<int:id>", methods=["DELETE"])
 def delete_product_by_id(id):
 	get_product = Product.query.get(id)
 	db.session.delete(get_product)
 	db.session.commit()
-	return {"message": "Deleted product"}
+	return response_with(resp.SUCCESS_204, value={"message": "Deleted product"})

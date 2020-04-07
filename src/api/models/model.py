@@ -1,6 +1,6 @@
 from api.utils.database import db
 from flask_sqlalchemy import SQLAlchemy
-from marshmallow import Schema, fields
+from marshmallow import Schema, fields, ValidationError, pre_load
 
 ##### MODELS #####
 associations = db.Table('associations',
@@ -10,7 +10,7 @@ associations = db.Table('associations',
 
 class Category(db.Model):
 	id = db.Column(db.Integer, primary_key=True)
-	name = db.Column(db.String(20), nullable=False)
+	name = db.Column(db.String(20), nullable=False, unique=True)
 	products = db.relationship(
 				"Product", 
 				secondary=associations, lazy="subquery",
@@ -24,7 +24,7 @@ class Category(db.Model):
 
 class Product(db.Model):
 	id = db.Column(db.Integer, primary_key=True)
-	name = db.Column(db.String(20), nullable=False)
+	name = db.Column(db.String(20), nullable=False, unique=True)
 	categories = db.relationship(
 				"Category", 
 				secondary=associations, lazy="subquery",
@@ -45,13 +45,21 @@ def must_not_be_blank(data):
 class ProductSchema(Schema):
 	id = fields.Int(dump_only=True)
 	name = fields.Str(required=True, validate=must_not_be_blank)
-	categories = fields.Nested(lambda: CategorySchema(only=("id", "name")))
 	
 class CategorySchema(Schema):
 	id = fields.Int(dump_only=True)
 	name = fields.Str(required=True, validate=must_not_be_blank)
 	products = fields.List(fields.Nested(ProductSchema(only=("id", "name"))))
 
+	@pre_load
+	def process_products(self, data, **kwargs):
+		product_names = data.get("products")
+		product_lists = []
+		for p in product_names:
+			product = {'name': p}
+			product_lists.append(product)
+		data["products"] = product_lists
+		return data
 
 category_schema = CategorySchema()
 categories_schema = CategorySchema(many=True, only=("id", "name"))

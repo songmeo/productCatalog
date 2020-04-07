@@ -18,7 +18,6 @@ MISSING_PARAMETERS_422 = {
 BAD_REQUEST_400 = {
 	"http_code": 400,
 	"code": "badRequest",
-	"message": "Bad request"
 }
 SERVER_ERROR_500 = {
 	"http_code": 500,
