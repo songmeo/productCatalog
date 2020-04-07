@@ -2,12 +2,14 @@ from flask import Blueprint
 from flask import request, jsonify
 from api.utils.responses import response_with 
 from api.utils import responses as resp
-from api.models.category import Category, CategorySchema
+from api.models.model import Product, ProductSchema, Category, CategorySchema
 from api.utils.database import db
 
 category_routes = Blueprint("category_routes", __name__)
 category_schema = CategorySchema()
-categories_schema = CategorySchema(many=True)
+categories_schema = CategorySchema(many=True, only=("id", "name"))
+product_schema = ProductSchema()
+products_schema = ProductSchema(many=True, only=("id", "name"))
 
 @category_routes.route('/')
 def get_categories():
@@ -44,12 +46,12 @@ def new_category():
 			result = category_schema.dump(Category.query.get(category.id))
 			return {"message": "Created new category.", "category": result}
 		else:
-			return {"message": "Category existed"}
+			return response_with(resp.SUCCESS_201, value={"message": "Category existed"})
 	except Exception as e:
 		print(e)
 		return response_with(resp.INVALID_INPUT_422)
 
-@category_routes.route("/category/<int:id>", methods=['PUT'])
+@category_routes.route("/<int:id>", methods=['PUT'])
 def update_category_by_id(id):
 	json_data = request.get_json()
 	if not json_data:
@@ -57,7 +59,7 @@ def update_category_by_id(id):
 	try:
 		data = category_schema.load(json_data)
 	except ValidationError as err:
-		return jsonify(err.messages), 422
+		return response_with(resp.INVALID_INPUT_422)
 	get_category = Category.query.get(id)
 	if data.get("name"):
 		get_category.name = data["name"]
@@ -66,7 +68,13 @@ def update_category_by_id(id):
 	result = category_schema.dump(get_category)
 	return response_with(resp.SUCCESS_200, value={"category": result})
 
-@category_routes.route("/category/<int:id>", methods = ['DELETE'])
+@category_routes.route("/", methods = ['DELETE'])
+def delete_all():
+	Category.query.delete()
+	db.session.commit()
+	return response_with(resp.SUCCESS_200)
+	
+@category_routes.route("/<int:id>", methods = ['DELETE'])
 def delete_category_by_id(id):
 	get_category = Category.query.get(id)
 	db.session.delete(get_category)

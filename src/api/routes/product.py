@@ -2,8 +2,7 @@ from flask import Blueprint
 from flask import request, jsonify
 from api.utils.responses import response_with 
 from api.utils import responses as resp
-from api.models.product import Product, ProductSchema
-from api.models.category import Category
+from api.models.model import Product, ProductSchema, Category, CategorySchema
 from api.utils.database import db
 
 product_routes = Blueprint("product_routes", __name__)
@@ -35,23 +34,28 @@ def new_product():
 			data = product_schema.load(json_data)
 		except ValidationError as err:
 			return jsonify(err.messages), 422
-		name = data["category"]["name"]
-		category = Category.query.filter_by(name=name).first()
-		if category is None:
-			category = Category(name=name)
-			db.session.add(category)
-		product = Product(
+		product = Product.query.filter_by(name=data["name"]).first()
+		if product is None: #check if product exists
+			name = data["category"]["name"]
+			category = Category.query.filter_by(name=name).first()
+			if category is None: #check if category exists
+				category = Category(name=name)
+				db.session.add(category)
+				product = Product(
 				name=data["name"], category = category
 				)
-		db.session.add(product)
-		db.session.commit()
-		result = product_schema.dump(Product.query.get(product.id))
-		return response_with(resp.SUCCESS_200, value={"product": result})
+			product = Product(name=name)
+			db.session.add(product)
+			db.session.commit()
+			result = product_schema.dump(Product.query.get(product.id))
+			return response_with(resp.SUCCESS_200, value={"product": result})
+		else:
+			return response_with(resp.SUCCESS_201, value={"message": "Product existed"})
 	except Exception as e:
 		print(e)
 		return response_with(resp.INVALID_INPUT_422)
 
-@product_routes.route("/product/<int:id>", methods=["PUT"])
+@product_routes.route("/<int:id>", methods=["PUT"])
 def update_product_by_id(id):
 	data = request.get_json()
 	if not data:
@@ -66,7 +70,7 @@ def update_product_by_id(id):
 	result = product_schema.dump(get_product)
 	return {"message": "Updated product", "product": result}
 
-@product_routes.route("/product/<int:id>", methods=["DELETE"])
+@product_routes.route("/<int:id>", methods=["DELETE"])
 def delete_product_by_id(id):
 	get_product = Product.query.get(id)
 	db.session.delete(get_product)

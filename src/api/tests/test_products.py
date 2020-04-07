@@ -1,7 +1,6 @@
 import json, io
 from api.utils.test_base import BaseTestCase
-from api.models.category import Category
-from api.models.product import Product
+from api.models.model import Product, ProductSchema, Category, CategorySchema
 import unittest2 as unittest
 
 class TestProducts(BaseTestCase):
@@ -20,3 +19,8 @@ class TestProducts(BaseTestCase):
 		)
 		data = json.loads(response.data)
 		self.assertEqual(200, response.status_code)
+	
+'''
+	def test_create_duplicate_product(self):
+		product = 
+'''

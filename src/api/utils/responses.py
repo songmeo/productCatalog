@@ -5,7 +5,6 @@ INVALID_FIELD_NAME_SENT_422 = {
 	"code": "invalidField",
 	"message": "Invalid fields found"
 }
-
 INVALID_INPUT_422 = {
 	"http_code": 422,
 	"code": "invalidInput",
@@ -30,11 +29,6 @@ SERVER_ERROR_404 = {
 	"http_code": 404,
 	"code": "notFound",
 	"message": "Resource not found"
-}
-UNAUTHORIZED_403 = {
-	"http_code": 403,
-	"code": "notAuthorized",
-	"message": "You are not authorised to execute this."
 }
 SUCCESS_200 = {    
 	'http_code': 200,    
