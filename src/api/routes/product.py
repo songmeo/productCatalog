@@ -28,23 +28,23 @@ def new_product():
 	data = request.get_json()
 	if not data:
 		return response_with(resp.INVALID_INPUT_422)
-	product = Product.query.filter_by(name=data["name"]).first()
-	if product is None:
-		product = Product(name=data["name"])
-		try:
-			category = Category.query.filter_by(name=data["category"]).first()
-		except:
-			return response_with(resp.MISSING_PARAMETERS_422)
-		if category is None:
-			category = Category(name=data["category"],products=[])
-			db.session.add(category)
-		category.products.append(product)
-		db.session.add(product)
-		db.session.commit()
-		result = product_schema.dump(Product.query.get(product.id))
-		return response_with(resp.SUCCESS_200, value={"product": result})
-	return response_with(resp.SUCCESS_201, value={"message": "product existed"})
-
+	exists = Product.query.filter_by(name=data["name"]).first()
+	if exists:
+		return response_with(resp.SUCCESS_201, value={"message": "product existed"})
+	product = Product(name=data["name"])
+	try:
+		category = Category.query.filter_by(name=data["category"]).first()
+	except:
+		return response_with(resp.MISSING_PARAMETERS_422)
+	if category is None:
+		category = Category(name=data["category"],products=[])
+		db.session.add(category)
+	category.products.append(product)
+	db.session.add(product)
+	db.session.commit()
+	result = product_schema.dump(Product.query.get(product.id))
+	return response_with(resp.SUCCESS_200, value={"product": result})
+	
 @product_routes.route("/<int:id>", methods=["PUT"])
 def change_product_name_by_id(id):
 	data = request.get_json()

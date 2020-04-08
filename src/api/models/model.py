@@ -55,7 +55,6 @@ class CategorySchema(Schema):
 	id = fields.Int(dump_only=True)
 	name = fields.Str(required=True, validate=must_not_be_blank)
 	products = fields.List(fields.Nested(ProductSchema(only=("id", "name"))))
-
 	@pre_load
 	def process_products(self, data, **kwargs):
 		product_names = data.get("products")
