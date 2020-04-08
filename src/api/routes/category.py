@@ -39,7 +39,7 @@ def new_category():
 	category = Category.query.filter_by(name=name).first()
 	if category is not None:
 		return response_with(resp.SUCCESS_201, value={"message": "Category existed"})
-	category = Category(name=name)
+	category = Category(name=name, products=[])
 	products = data["products"]
 	for p in products:
 		product = Product.query.filter_by(name=p["name"]).first()
@@ -53,22 +53,23 @@ def new_category():
 	return {"message": "Created new category.", "category": result}
 
 @category_routes.route("/<int:id>", methods=['PATCH'])
-def add_product_to_category_by_id(id):
+def modify_category_by_id(id):
 	category = Category.query.get(id)
 	if category is None:
 		return response_with(resp.BAD_REQUEST_400, value={"message": "No such category"})
 	data = request.get_json()
 	if not data:
 		return response_with(resp.BAD_REQUEST_400, value={"message": "No input data provided"})
-	products = data['products']
-	if products is None:
-		return response_with(resp.INVALID_FIELD_NAME_SENT_422)
-	for p in products:
-		product = Product.query.filter_by(name=p).first()
-		if product is None:
-			product = Product(name=p)
-			db.session.add(product)
-		category.products.append(product)
+	if data.get('name'):
+		category.name = data['name']
+	if data.get('products'):
+		products = data['products']
+		for p in products:
+			product = Product.query.filter_by(name=p).first()
+			if product is None:
+				product = Product(name=p)
+				db.session.add(product)
+			category.products.append(product)
 	db.session.add(category)
 	db.session.commit()
 	result = category_schema.dump(category)
@@ -105,7 +106,7 @@ def delete_all():
 	db.session.commit()
 	return response_with(resp.SUCCESS_200)
 
-@category_routes.route("/<int:id>", methods = ['DELETE'])
+@category_routes.route("/<int:id>/products", methods = ['DELETE'])
 def delete_products_from_category(id):
 	category = Category.query.get(id)
 	if not category:

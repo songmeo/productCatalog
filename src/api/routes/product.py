@@ -33,7 +33,7 @@ def new_product():
 		product = Product(name=data["name"])
 		category = Category.query.filter_by(name=data["category"]).first()
 		if category is None:
-			category = Category(name=data["category"])
+			category = Category(name=data["category"],products=[])
 			db.session.add(category)
 		category.products.append(product)
 		db.session.add(product)
@@ -57,7 +57,7 @@ def change_product_name_by_id(id):
 	return response_with(resp.SUCCESS_201, value={"product": result})
 
 @product_routes.route("/", methods=["DELETE"])
-def delete_all_products(id):
+def delete_all_products():
 	Product.query.delete()
 	db.session.commit()
 	return response_with(resp.SUCCESS_200)

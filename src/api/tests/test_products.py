@@ -20,7 +20,20 @@ class TestProducts(BaseTestCase):
 		data = json.loads(response.data)
 		self.assertEqual(200, response.status_code)
 	
-'''
+
 	def test_create_duplicate_product(self):
-		product = 
-'''
+		Product(name='pork').create()
+		new_product = {
+			'name': 'pork'
+		}
+		response = self.app.post(
+			'/api/products/',
+			data=json.dumps(new_product),
+			content_type='application/json',
+		)
+		data = json.loads(response.data)
+		self.assertEqual(201, response.status_code)
+
+	
+if __name__ == '__main__':
+	unittest.main()

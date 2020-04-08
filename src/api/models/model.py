@@ -15,8 +15,13 @@ class Category(db.Model):
 				"Product", 
 				secondary=associations, lazy="subquery",
 				back_populates="categories")
-	def __init__(self, name):
+	def __init__(self, name, products):
 		self.name = name
+		if products:
+			for p in products:
+				product = Product(name=p)
+				self.products.add(product)
+				db.session.add(product)
 	def create(self):
 		db.session.add(self)
 		db.session.commit()
@@ -54,11 +59,14 @@ class CategorySchema(Schema):
 	@pre_load
 	def process_products(self, data, **kwargs):
 		product_names = data.get("products")
-		product_lists = []
-		for p in product_names:
-			product = {'name': p}
-			product_lists.append(product)
-		data["products"] = product_lists
+		if product_names:
+			product_lists = []
+			for p in product_names:
+				product = {'name': p}
+				product_lists.append(product)
+			data["products"] = product_lists
+		else:
+			data["products"] = []
 		return data
 
 category_schema = CategorySchema()
