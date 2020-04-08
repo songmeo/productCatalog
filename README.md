@@ -1,6 +1,5 @@
 # Product Catalog
-Python REST API using flask, sqlalchemy and marshmallow.
-<br>
+A simple python REST API using flask, sqlalchemy and marshmallow.
 ```
 src/
 ├── api/
@@ -21,7 +20,7 @@ src/
 ├── requirements.txt
 └── README.md
 ```
-## Usage
+## Deploy:
 * Build:
 ```
   git clone https://github.com/songmeo/productCatalog
@@ -32,9 +31,9 @@ src/
 ```
 * Run application:
 ```
-  python run.py
+  python src/run.py
 ```
-* Run unit tests:
+* Run unit tests inside `src` folder:
 ```
-  python -m unittest discover src/api/tests
+  cd src && python -m unittest discover api/tests
 ```
