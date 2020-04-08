@@ -34,6 +34,24 @@ class TestProducts(BaseTestCase):
 		data = json.loads(response.data)
 		self.assertEqual(201, response.status_code)
 
+	def test_update_product(self):
+		product = Product(name='tuna').create()
+		update_info = {
+			'name': 'salmon'
+		}
+		response = self.app.put(
+			'/api/products/' + str(product.id),
+			data=json.dumps(update_info),
+			content_type='application/json',
+		)
+		data = json.loads(response.data)
+		self.assertEqual(200, response.status_code)
 	
+	def test_delete_product(self):
+		product = Product(name='tuna').create()
+		response = self.app.delete(
+			'/api/products/' + str(product.id))
+		self.assertEqual(200, response.status_code)
+
 if __name__ == '__main__':
 	unittest.main()

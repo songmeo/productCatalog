@@ -4,11 +4,11 @@ class Config(object):
 	SQLALCHEMY_TRACK_MODIFICATIONS = False
 
 class ProductionConfig(Config):
-	SQLALCHEMY_DATABASE_URI = 'sqlite:////home/kat/adcash/database/products.db'
+	SQLALCHEMY_DATABASE_URI = 'sqlite:////tmp/products.db'
 	
 class DevelopmentConfig(Config):
 	DEBUG = True
-	SQLALCHEMY_DATABASE_URI = 'sqlite:////home/kat/adcash/database/products.db'
+	SQLALCHEMY_DATABASE_URI = 'sqlite:////tmp/products.db'
 	SQLALCHEMY_ECHO = False
 	
 class TestingConfig(Config):

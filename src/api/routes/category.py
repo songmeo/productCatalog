@@ -22,7 +22,7 @@ def get_categories():
 def get_category(pk):
 	category = Category.query.get(pk)
 	if not category:
-		return response_with(resp.BAD_REQUEST_400, value={"message": "Category could not be found."})
+		return response_with(SERVER_ERROR_404)
 	category_result = category_schema.dump(category)
 	return {"category": category_result}
 	
@@ -30,7 +30,7 @@ def get_category(pk):
 def new_category():
 	json_data = request.get_json()
 	if not json_data:
-		return response_with(resp.BAD_REQUEST_400, value={"message": "No input data provided"})
+		return response_with(INVALID_INPUT_422)
 	try:
 		data = category_schema.load(json_data)
 	except ValidationError as err:
@@ -56,10 +56,10 @@ def new_category():
 def modify_category_by_id(id):
 	category = Category.query.get(id)
 	if category is None:
-		return response_with(resp.BAD_REQUEST_400, value={"message": "No such category"})
+		return response_with(resp.SERVER_ERROR_404)
 	data = request.get_json()
 	if not data:
-		return response_with(resp.BAD_REQUEST_400, value={"message": "No input data provided"})
+		return response_with(resp.INVALID_INPUT_422)
 	if data.get('name'):
 		category.name = data['name']
 	if data.get('products'):
@@ -79,7 +79,7 @@ def modify_category_by_id(id):
 def update_category_by_id(id):
 	json_data = request.get_json()
 	if not json_data:
-		return response_with(resp.BAD_REQUEST_400, value={"message": "No input data provided"})
+		return response_with(resp.INVALID_INPUT_422)
 	try:
 		data = category_schema.load(json_data)
 	except ValidationError as err:
@@ -110,10 +110,10 @@ def delete_all():
 def delete_products_from_category(id):
 	category = Category.query.get(id)
 	if not category:
-		return response_with(resp.BAD_REQUEST_400, value={"message": "no category found"})
+		return response_with(resp.SERVER_ERROR_404)
 	data = request.get_json()
 	if not data:
-		return response_with(resp.BAD_REQUEST_400, value={"message": "No input data provided"})
+		return response_with(resp.INVALID_INPUT_422)
 	products = data['products']
 	if products is None:
 		return response_with(resp.INVALID_FIELD_NAME_SENT_422)
@@ -131,7 +131,7 @@ def delete_products_from_category(id):
 def delete_category_by_id(id):
 	category = Category.query.get(id)
 	if not category:
-		return response_with(resp.BAD_REQUEST_400, value={"message": "no category found"})
+		return response_with(resp.INVALID_INPUT_422)
 	db.session.delete(category)
 	db.session.commit()
 	return {"message": "Deleted category"}

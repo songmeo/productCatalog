@@ -4,7 +4,7 @@ from api.utils.responses import response_with
 from api.utils import responses as resp
 from api.models.model import Product, ProductSchema, Category, CategorySchema
 from api.utils.database import db
-
+from marshmallow import ValidationError
 product_routes = Blueprint("product_routes", __name__)
 product_schema = ProductSchema()
 products_schema = ProductSchema(many=True, only=("id", "name"))
@@ -13,7 +13,7 @@ products_schema = ProductSchema(many=True, only=("id", "name"))
 def get_product(pk):
 	product = Product.query.get(pk)
 	if not product:
-		return response_with(resp.BAD_REQUEST_400, {"message": "Product could not be found."})
+		return response_with(resp.SERVER_ERROR_404)
 	result = product_schema.dump(product)
 	return jsonify({"product": result})
 	
@@ -27,11 +27,14 @@ def get_products():
 def new_product():
 	data = request.get_json()
 	if not data:
-		return response_with(resp.BAD_REQUEST_400, value={"message": "No input data provided"})
+		return response_with(resp.INVALID_INPUT_422)
 	product = Product.query.filter_by(name=data["name"]).first()
 	if product is None:
 		product = Product(name=data["name"])
-		category = Category.query.filter_by(name=data["category"]).first()
+		try:
+			category = Category.query.filter_by(name=data["category"]).first()
+		except:
+			return response_with(resp.MISSING_PARAMETERS_422)
 		if category is None:
 			category = Category(name=data["category"],products=[])
 			db.session.add(category)
@@ -46,15 +49,18 @@ def new_product():
 def change_product_name_by_id(id):
 	data = request.get_json()
 	if not data:
-		return response_with(resp.BAD_REQUEST_400, value={"message": "No input data provided"})
+		return response_with(resp.INVALID_INPUT_422)
 	get_product = Product.query.get(id)
 	if not get_product:
-		return response_with(resp.BAD_REQUEST_400, value={"message": "no product found"})
-	get_product.name = data["name"]
+		return response_with(resp.SERVER_ERROR_404)
+	try:
+		get_product.name = data["name"]
+	except:
+		return response_with(resp.MISSING_PARAMETERS_422)
 	db.session.add(get_product)
 	db.session.commit()
 	result = product_schema.dump(get_product)
-	return response_with(resp.SUCCESS_201, value={"product": result})
+	return response_with(resp.SUCCESS_200, value={"product": result})
 
 @product_routes.route("/", methods=["DELETE"])
 def delete_all_products():
@@ -67,4 +73,4 @@ def delete_product_by_id(id):
 	get_product = Product.query.get(id)
 	db.session.delete(get_product)
 	db.session.commit()
-	return response_with(resp.SUCCESS_204, value={"message": "Deleted product"})
+	return response_with(resp.SUCCESS_200, value={"message": "Deleted product"})
