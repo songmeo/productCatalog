@@ -39,7 +39,6 @@ def new_product():
 	if category is None:
 		category = Category(name=data["category"],products=[])
 		db.session.add(category)
-	category.products.append(product)
 	db.session.add(product)
 	db.session.commit()
 	result = product_schema.dump(Product.query.get(product.id))
