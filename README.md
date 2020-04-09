@@ -1,22 +1,23 @@
 # Product Catalog
 A simple python REST API using flask, sqlalchemy and marshmallow.
 ```
-src/
-├── api/
-|   ├── utils/
-|   |   └── database.py 
-|   ├── config/
-|   |   └── config.py
-|   ├── models/   
-|   |   └── model.py
-|   ├── routes/
-|   |   ├── category.py
-|   |   └── product.py
-|   └── tests/
-|       ├── test_categories.py
-|       └── test_products.py
-├── run.py
-├── main.py
+venv/
+├── src/
+|   ├── api/
+|   |   ├── utils/
+|   |   |   └── database.py 
+|   |   ├── config/
+|   |   |   └── config.py
+|   |   ├── models/   
+|   |   |   └── model.py
+|   |   ├── routes/
+|   |   |   ├── category.py
+|   |   |   └── product.py
+|   |   └── tests/
+|   |       ├── test_categories.py
+|   |       └── test_products.py
+|   ├── run.py
+|   └── main.py
 ├── requirements.txt
 └── README.md
 ```
@@ -37,3 +38,5 @@ src/
 ```
   cd src && python -m unittest discover api/tests
 ```
+## Documentation:
+[OpenAPI](https://app.swaggerhub.com/apis-docs/songmeo/productCatalog/0.1-oas3#/default)
