@@ -18,6 +18,7 @@ def get_categories():
 	result = categories_schema.dump(categories)
 	return {"categories": result}
 
+#can be used to list products by categories
 @category_routes.route("/<int:pk>")
 def get_category(pk):
 	category = Category.query.get(pk)
@@ -34,10 +35,10 @@ def new_category():
 	try:
 		data = category_schema.load(json_data)
 	except ValidationError as err:
-		return response_with(resp.INVALID_INPUT_422, value={"message": "this part"})
+		return response_with(resp.INVALID_INPUT_422)
 	name = data["name"]
 	category = Category.query.filter_by(name=name).first()
-	if category is not None:
+	if category:
 		return response_with(resp.SUCCESS_201, value={"message": "Category existed"})
 	category = Category(name=name)
 	products = data.get("products")
@@ -53,24 +54,51 @@ def new_category():
 	result = category_schema.dump(category)
 	return {"message": "Created new category.", "category": result}
 
-@category_routes.route("/<int:id>", methods=['PATCH'])
-def modify_category_by_id(id):
+@category_routes.route("/<int:id>/add", methods=['PATCH'])
+def add_products_to_category_by_id(id):
 	category = Category.query.get(id)
 	if category is None:
 		return response_with(resp.SERVER_ERROR_404)
-	data = request.get_json()
-	if not data:
+	json_data = request.get_json()
+	if not json_data:
 		return response_with(resp.INVALID_INPUT_422)
-	if data.get('name'):
-		category.name = data['name']
-	if data.get('products'):
-		products = data['products']
-		for p in products:
-			product = Product.query.filter_by(name=p).first()
-			if product is None:
-				product = Product(name=p)
-				db.session.add(product)
-			category.products.append(product)
+	try:
+		data = category_schema.load(json_data, partial=True)
+	except ValidationError as err:
+		return response_with(resp.INVALID_INPUT_422)
+	products = data.get('products')
+	if not products:
+		return response_with(resp.MISSING_PARAMETERS_422)
+	for p in products:
+		product = Product.query.filter_by(name=p['name']).first()
+		if product is None:
+			product = Product(name=p['name'])
+			db.session.add(product)
+		category.products.append(product)
+	db.session.add(category)
+	db.session.commit()
+	result = category_schema.dump(category)
+	return response_with(resp.SUCCESS_200, value={"category": result})
+
+@category_routes.route("/<int:id>/remove", methods = ['PATCH'])
+def remove_products_from_category_by_id(id):
+	category = Category.query.get(id)
+	if not category:
+		return response_with(resp.SERVER_ERROR_404)
+	json_data = request.get_json()
+	if not json_data:
+		return response_with(resp.INVALID_INPUT_422)
+	try:
+		data = category_schema.load(json_data, partial=True)
+	except ValidationError as err:
+		return response_with(resp.INVALID_INPUT_422)
+	products = data.get('products')
+	if not products:
+		return response_with(resp.MISSING_PARAMETERS_422)
+	for p in products:
+		product = Product.query.filter_by(name=p['name']).first()
+		if product and (product in category.products):
+			category.products.remove(product)
 	db.session.add(category)
 	db.session.commit()
 	result = category_schema.dump(category)
@@ -107,27 +135,6 @@ def delete_all():
 	db.session.commit()
 	return response_with(resp.SUCCESS_200)
 
-@category_routes.route("/<int:id>/products", methods = ['PATCH'])
-def delete_products_from_category(id):
-	category = Category.query.get(id)
-	if not category:
-		return response_with(resp.SERVER_ERROR_404)
-	data = request.get_json()
-	if not data:
-		return response_with(resp.INVALID_INPUT_422)
-	products = data['products']
-	if products is None:
-		return response_with(resp.INVALID_FIELD_NAME_SENT_422)
-	for p in products:
-		product = Product.query.filter_by(name=p).first()
-		if product and (product in category.products):
-			category.products.remove(product)
-	db.session.add(category)
-	db.session.commit()
-	result = category_schema.dump(category)
-	return response_with(resp.SUCCESS_200, value={"category": result})
-	
-	
 @category_routes.route("/<int:id>", methods = ['DELETE'])
 def delete_category_by_id(id):
 	category = Category.query.get(id)

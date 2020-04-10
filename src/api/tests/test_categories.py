@@ -73,22 +73,35 @@ class TestCategories(BaseTestCase):
 		
 	def test_adding_same_product_to_many_categories(self):
 		product = {
-			'products': ["beef"]
+			'products': ['beef']
 		}
 		category1 = Category(name="meat").create()
 		category2 = Category(name="others").create()
 		response1 = self.app.patch(
-			'/api/categories/' + str(category1.id),
+			'/api/categories/' + str(category1.id) + '/add',
 			data=json.dumps(product),
 			content_type='application/json',
 		)
 		response2 = self.app.patch(
-			'/api/categories/' + str(category2.id),
+			'/api/categories/' + str(category2.id) + '/add',
 			data=json.dumps(product),
 			content_type='application/json',
 		)
 		self.assertEqual(200, response1.status_code)
 		self.assertEqual(200, response2.status_code)
+	
+	def test_removing_products_from_category(self):
+		category = Category(name='meat', products=['beef']).create()
+		product = {
+			'products': ['beef']
+		}
+		response = self.app.patch(
+			'/api/categories/' + str(category.id) + '/remove',
+			data=json.dumps(product),
+			content_type='application/json',
+		)
+		self.assertEqual(200, response.status_code)
+
 		
 if __name__ == '__main__':
 	unittest.main()

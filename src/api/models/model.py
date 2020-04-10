@@ -16,8 +16,14 @@ class Category(db.Model):
 				secondary=associations,
 				back_populates="categories",
 				lazy="dynamic")
-	def __init__(self, name):
+	def __init__(self, name, **kwargs):
 		self.name = name
+		products = kwargs.get('products', None)
+		if products:
+			for p in products:
+				product = Product(name=p)
+				self.products.append(product)
+				db.session.add(product)
 	def create(self):
 		db.session.add(self)
 		db.session.commit()
