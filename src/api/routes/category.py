@@ -34,19 +34,20 @@ def new_category():
 	try:
 		data = category_schema.load(json_data)
 	except ValidationError as err:
-		return response_with(resp.INVALID_INPUT_422)
+		return response_with(resp.INVALID_INPUT_422, value={"message": "this part"})
 	name = data["name"]
 	category = Category.query.filter_by(name=name).first()
 	if category is not None:
 		return response_with(resp.SUCCESS_201, value={"message": "Category existed"})
-	category = Category(name=name, products=[])
-	products = data["products"]
-	for p in products:
-		product = Product.query.filter_by(name=p["name"]).first()
-		if product is None:
-			product = Product(name=p["name"])
-			db.session.add(product)
-		category.products.append(product)
+	category = Category(name=name)
+	products = data.get("products")
+	if products:
+		for p in products:
+			product = Product.query.filter_by(name=p["name"]).first()
+			if product is None:
+				product = Product(name=p["name"])
+				db.session.add(product)
+			category.products.append(product)
 	db.session.add(category)
 	db.session.commit()
 	result = category_schema.dump(category)
@@ -106,7 +107,7 @@ def delete_all():
 	db.session.commit()
 	return response_with(resp.SUCCESS_200)
 
-@category_routes.route("/<int:id>/products", methods = ['DELETE'])
+@category_routes.route("/<int:id>/products", methods = ['PATCH'])
 def delete_products_from_category(id):
 	category = Category.query.get(id)
 	if not category:

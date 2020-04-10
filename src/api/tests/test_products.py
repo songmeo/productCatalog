@@ -10,7 +10,7 @@ class TestProducts(BaseTestCase):
 	def test_create_product(self):
 		product = {
 			'name': 'banana',
-			'category': 'fruit'
+			'categories': ['fruit']
 		}
 		response = self.app.post(
 			'/api/products/',

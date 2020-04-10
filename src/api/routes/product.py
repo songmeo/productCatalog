@@ -28,17 +28,22 @@ def new_product():
 	data = request.get_json()
 	if not data:
 		return response_with(resp.INVALID_INPUT_422)
+	try:
+		data = product_schema.load(data)
+	except ValidationError as err:
+		return response_with(resp.INVALID_INPUT_422)	
 	exists = Product.query.filter_by(name=data["name"]).first()
 	if exists:
 		return response_with(resp.SUCCESS_201, value={"message": "product existed"})
 	product = Product(name=data["name"])
-	try:
-		category = Category.query.filter_by(name=data["category"]).first()
-	except:
-		return response_with(resp.MISSING_PARAMETERS_422)
-	if category is None:
-		category = Category(name=data["category"],products=[])
-		db.session.add(category)
+	categories = data.get("categories")
+	if categories:
+		for c in categories:
+			category = Category.query.filter_by(name=c['name']).first()
+			if category is None:
+				category = Category(name=c['name'])
+				db.session.add(category)
+			product.categories.append(category)
 	db.session.add(product)
 	db.session.commit()
 	result = product_schema.dump(Product.query.get(product.id))

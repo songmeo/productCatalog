@@ -4,7 +4,7 @@ from api.models.model import Product, ProductSchema, Category, CategorySchema
 import unittest2 as unittest
 
 def create_category():
-	category = Category(name="meaat",products=[]).create()
+	category = Category(name="meaat").create()
 	return category
 
 class TestCategories(BaseTestCase):
@@ -75,8 +75,8 @@ class TestCategories(BaseTestCase):
 		product = {
 			'products': ["beef"]
 		}
-		category1 = Category(name="meat",products=[]).create()
-		category2 = Category(name="others",products=[]).create()
+		category1 = Category(name="meat").create()
+		category2 = Category(name="others").create()
 		response1 = self.app.patch(
 			'/api/categories/' + str(category1.id),
 			data=json.dumps(product),
@@ -92,4 +92,3 @@ class TestCategories(BaseTestCase):
 		
 if __name__ == '__main__':
 	unittest.main()
-
