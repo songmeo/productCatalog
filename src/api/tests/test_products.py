@@ -37,7 +37,8 @@ class TestProducts(BaseTestCase):
 	def test_update_product(self):
 		product = Product(name='tuna').create()
 		update_info = {
-			'name': 'salmon'
+			'name': 'salmon',
+			'categories': ['fish']
 		}
 		response = self.app.put(
 			'/api/products/' + str(product.id),

@@ -26,7 +26,8 @@ class TestCategories(BaseTestCase):
 	def test_update_category(self):
 		category = create_category()
 		update_info = {
-			'name': 'meat'
+			'name': 'meat',
+			'products': ['pork']
 		}
 		response = self.app.put(
 			'/api/categories/' + str(category.id),

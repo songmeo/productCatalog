@@ -114,17 +114,20 @@ def update_category_by_id(id):
 	except ValidationError as err:
 		return response_with(resp.INVALID_INPUT_422)
 	category = Category.query.get(id)
-	category_exist = Category.query.filter_by(name=data["name"]).first()
-	if category_exist:
-		return response_with(resp.BAD_REQUEST_400, value={"message": "Category existed"})
 	category.name = data["name"]
 	category.products = []
-	products = data["products"]
+	try:
+		products = data["products"]
+	except:
+		return repsonse_with(resp.MISSING_PARAMETERS_422)
 	for p in products:
 		product = Product(name=p["name"])
 		db.session.add(product)
 		category.products.append(product)
-	db.session.add(category)
+	try:
+		db.session.add(category)
+	except:
+		return response_with(resp.BAD_REQUEST_400, value={"message": "Category existed"})
 	db.session.commit()
 	result = category_schema.dump(category)
 	return response_with(resp.SUCCESS_200, value={"category": result})

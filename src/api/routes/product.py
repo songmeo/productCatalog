@@ -50,20 +50,31 @@ def new_product():
 	return response_with(resp.SUCCESS_200, value={"product": result})
 	
 @product_routes.route("/<int:id>", methods=["PUT"])
-def change_product_name_by_id(id):
-	data = request.get_json()
-	if not data:
+def update_products_by_id(id):	
+	json_data = request.get_json()
+	if not json_data:
 		return response_with(resp.INVALID_INPUT_422)
-	get_product = Product.query.get(id)
-	if not get_product:
-		return response_with(resp.SERVER_ERROR_404)
 	try:
-		get_product.name = data["name"]
+		data = product_schema.load(json_data)
+	except ValidationError as err:
+		return response_with(resp.INVALID_INPUT_422)
+	product = Product.query.get(id)
+	product.name = data["name"]
+	product.categories = []
+	try:
+		categories = data["categories"]
 	except:
-		return response_with(resp.MISSING_PARAMETERS_422)
-	db.session.add(get_product)
+		return repsonse_with(resp.MISSING_PARAMETERS_422)
+	for c in categories:
+		category = Category(name=c["name"])
+		db.session.add(category)
+		category.products.append(product)
+	try:
+		db.session.add(product)
+	except:
+		return response_with(resp.BAD_REQUEST_400, value={"message": "Product existed"})
 	db.session.commit()
-	result = product_schema.dump(get_product)
+	result = product_schema.dump(product)
 	return response_with(resp.SUCCESS_200, value={"product": result})
 
 @product_routes.route("/", methods=["DELETE"])
